@@ -32,3 +32,4 @@ pip install dlib
 pip install face_recognition
 pip install opencv-python
 pip install numpy
+pip3 install setuptools
