@@ -1,43 +1,46 @@
 import cv2
-import numpy as np
 import face_recognition
-import math
 
-imgAnar = face_recognition.load_image_file('images/anar1.jpeg')
-imgAnar = cv2.cvtColor(imgAnar, cv2.COLOR_BGR2RGB)
+base_image = face_recognition.load_image_file('images/hamza.jpeg')
+base_encoding = face_recognition.face_encodings(base_image)[0]
 
-imgTest = face_recognition.load_image_file('images/anar2.jpeg')
-imgTest = cv2.cvtColor(imgTest, cv2.COLOR_BGR2RGB)
+cap = cv2.VideoCapture(0)
 
-faceLocsAnar = face_recognition.face_locations(imgAnar)
-for (top,right,bottom,left) in faceLocsAnar:
-    cv2.rectangle(imgAnar, (left, top), (right, bottom), (255, 0, 255), 2)
+while True:
+  ret, frame = cap.read()
+  if not ret:
+    break
 
-encodeAnar = face_recognition.face_encodings(imgAnar)
-if len(encodeAnar) == 0:
-    print("No face")
-    exit()
-encodeAnar = encodeAnar[0]
+  small_frame = cv2.resize(frame, (0, 0), fx=0.25, fy=0.25)
+  rgb_small_frame = cv2.cvtColor(small_frame, cv2.COLOR_BGR2RGB)
 
-faceLocsTest = face_recognition.face_locations(imgTest)
-for (top, right, bottom, left) in faceLocsTest:
-    cv2.rectangle(imgTest, (left, top), (right, bottom), (255, 0, 255), 2)
+  face_locations = face_recognition.face_locations(rgb_small_frame)
+  face_encodings = face_recognition.face_encodings(rgb_small_frame, face_locations)
 
-encodeTest = face_recognition.face_encodings(imgTest)
-if len(encodeTest) == 0:
-    print("No face")
-    exit()
-encodeTest = encodeTest[0]
+  for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+    top *= 4
+    right *= 4
+    bottom *= 4
+    left *= 4
 
-results = face_recognition.compare_faces([encodeAnar], encodeTest)
-face_distance = face_recognition.face_distance([encodeAnar], encodeTest)
+    matches = face_recognition.compare_faces([base_encoding], face_encoding)
+    face_distance = face_recognition.face_distance([base_encoding], face_encoding)
 
-print("Is it the same person? ", results[0])
-print(f"Face distance: {face_distance[0]}")
+    if matches[0]:
+      label = "You are Hamza"
+      color = (0, 255, 0)
+    else:
+      label = "You are Not Hamza"
+      color = (0, 0, 255)
 
-cv2.imshow("Anar", imgAnar)
-cv2.putText(imgTest, f'{results[0]} {round(face_distance[0], 2)}', (50, 50), cv2.FONT_HERSHEY_COMPLEX, 1, (255, 0, 255), 2)
-cv2.imshow("Anar Test", imgTest)
+    cv2.rectangle(frame, (left, top), (right, bottom), color, 2)
+    cv2.putText(frame, f'{label} {round(face_distance[0], 2)}', (left, top - 10),
+      cv2.FONT_HERSHEY_SIMPLEX, 0.7, color, 2)
 
-cv2.waitKey(0)
+  cv2.imshow('Say my Name', frame)
+
+  if cv2.waitKey(1) & 0xFF == ord('q'):
+    break
+
+cap.release()
 cv2.destroyAllWindows()
